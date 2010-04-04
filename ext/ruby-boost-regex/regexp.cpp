@@ -10,7 +10,11 @@ static VALUE rb_cBoostRegexp;
 
 ///////// imported from re.c
 
+#define RE_TALLOC(n,t)  ((t*)alloca((n)*sizeof(t)))
+#define TMALLOC(n,t)    ((t*)xmalloc((n)*sizeof(t)))
+#define TREALLOC(s,n,t) (s=((t*)xrealloc(s,(n)*sizeof(t))))
 #define MATCH_BUSY FL_USER2
+
 static VALUE match_alloc(VALUE klass)
 {
     NEWOBJ(match, struct RMatch);
@@ -22,6 +26,53 @@ static VALUE match_alloc(VALUE klass)
     MEMZERO(match->regs, struct re_registers, 1);
 
     return (VALUE)match;
+}
+
+static void
+init_regs(struct re_registers *regs, unsigned int num_regs)
+{
+  int i;
+
+  regs->num_regs = num_regs;
+  if (num_regs < RE_NREGS)
+    num_regs = RE_NREGS;
+
+  if (regs->allocated == 0) {
+    regs->beg = TMALLOC(num_regs, int);
+    regs->end = TMALLOC(num_regs, int);
+    regs->allocated = num_regs;
+  }
+  else if (regs->allocated < num_regs) {
+    TREALLOC(regs->beg, num_regs, int);
+    TREALLOC(regs->end, num_regs, int);
+    regs->allocated = num_regs;
+  }
+  for (i=0; i<num_regs; i++) {
+    regs->beg[i] = regs->end[i] = -1;
+  }
+}
+
+void
+re_copy_registers(struct re_registers *regs1, struct re_registers *regs2)
+{
+  int i;
+
+  if (regs1 == regs2) return;
+  if (regs1->allocated == 0) {
+    regs1->beg = TMALLOC(regs2->num_regs, int);
+    regs1->end = TMALLOC(regs2->num_regs, int);
+    regs1->allocated = regs2->num_regs;
+  }
+  else if (regs1->allocated < regs2->num_regs) {
+    TREALLOC(regs1->beg, regs2->num_regs, int);
+    TREALLOC(regs1->end, regs2->num_regs, int);
+    regs1->allocated = regs2->num_regs;
+  }
+  for (i=0; i<regs2->num_regs; i++) {
+    regs1->beg[i] = regs2->beg[i];
+    regs1->end[i] = regs2->end[i];
+  }
+  regs1->num_regs = regs2->num_regs;
 }
 
 /////////////////////////////
@@ -68,26 +119,54 @@ VALUE br_init(VALUE self, VALUE obj) {
     }
 }
 
+static VALUE get_backref_for_modification() {
+    VALUE match;
+    match = rb_backref_get();
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+        match = match_alloc(rb_cMatch);
+    }
+    else {
+        if (rb_safe_level() >= 3) 
+            OBJ_TAINT(match);
+        else
+            FL_UNSET(match, FL_TAINT);
+    }
+    return match;
+}
+
+static void
+fill_regs_from_smatch(std::string::const_iterator first, std::string::const_iterator last, struct re_registers *regs, boost::smatch matches) {
+    init_regs(regs, matches.size());
+    regs->beg[0] = matches[0].first - first;
+    regs->end[0] = matches[0].second - first;
+    
+    for (int idx = 1; idx <= matches.size(); idx++) {
+        if (!matches[idx].matched) {
+            regs->beg[idx] = regs->end[idx] = -1;
+        } else {
+            regs->beg[idx] = matches[idx].first - first;
+            regs->end[idx] = matches[idx].second - first;
+        }
+    }
+}
+
 /**
  * General matcher method that re-raises exception as a Ruby exception.  Gotta use this. sorry.
  */
-bool br_reg_match_iters(std::string::const_iterator start, std::string::const_iterator stop, boost::smatch& matches, boost::regex reg)
+static bool 
+br_reg_match_iters(VALUE str, std::string::const_iterator start, std::string::const_iterator stop, boost::smatch& matches, boost::regex reg)
 {
+    static struct re_registers regs;
     try {
         if (boost::regex_search(start, stop, matches, reg)) {
-            VALUE match;
-            match = rb_backref_get();
-            if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-                match = match_alloc(rb_cMatch);
-            }
-            else {
-                if (rb_safe_level() >= 3) 
-                    OBJ_TAINT(match);
-                else
-                    FL_UNSET(match, FL_TAINT);
-            }
+            VALUE match = get_backref_for_modification();
+            RMATCH(match)->str = rb_str_dup(str);
+            fill_regs_from_smatch(start, stop, &regs, matches);
+            re_copy_registers(RMATCH(match)->regs, &regs);
+            rb_backref_set(match);
             return true;
         } else {
+            rb_backref_set(Qnil);
             return false;
         }
     } catch (std::runtime_error& err) {
@@ -95,7 +174,8 @@ bool br_reg_match_iters(std::string::const_iterator start, std::string::const_it
     }
 }
 
-static unsigned int br_reg_search(VALUE self, VALUE str) {
+static int 
+br_reg_search(VALUE self, VALUE str) {
     boost::regex reg = *get_br_from_value(self);
     std::string input = StringValuePtr(str);
     
@@ -104,15 +184,32 @@ static unsigned int br_reg_search(VALUE self, VALUE str) {
     end = input.end();
     
     boost::smatch matches;
-    if (br_reg_match_iters(start, end, matches, reg)) {
+    if (br_reg_match_iters(str, start, end, matches, reg)) {
         return matches[0].first - start;
     } else {
         return -1;
     }
 }
 
+static VALUE 
+br_reg_do_match(VALUE self, VALUE str) {
+    boost::regex reg = *get_br_from_value(self);
+    std::string input = StringValuePtr(str);
+    
+    std::string::const_iterator start, end;
+    start = input.begin();
+    end = input.end();
+    
+    boost::smatch matches;
+    if (br_reg_match_iters(str, start, end, matches, reg)) {
+        return rb_backref_get();
+    } else {
+        return -1;
+    }
+}
+
 static VALUE br_match_operator(VALUE self, VALUE str) {
-    unsigned int start = br_reg_search(self, str);
+    int start = br_reg_search(self, str);
     if (start < 0) {
         return Qnil;
     }
@@ -156,6 +253,7 @@ extern "C" {
         rb_define_method(rb_cBoostRegexp, "===", RUBY_METHOD_FUNC(br_match_eqq_operator), 1);
         rb_define_method(rb_cBoostRegexp, "inspect", RUBY_METHOD_FUNC(br_inspect), 0);
         rb_define_method(rb_cBoostRegexp, "source", RUBY_METHOD_FUNC(br_source), 0);
+        rb_define_method(rb_cBoostRegexp, "match", RUBY_METHOD_FUNC(br_reg_do_match), 1);
         
     }
 }
