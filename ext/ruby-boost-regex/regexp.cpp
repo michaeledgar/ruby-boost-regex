@@ -220,6 +220,16 @@ br_reg_do_match(VALUE self, VALUE str) {
     }
 }
 
+static VALUE br_eql(VALUE self, VALUE other) {
+    if (!rb_obj_is_kind_of(other, rb_cBoostRegexp)) {
+        return Qfalse;
+    }
+    boost::regex a, b;
+    a = *get_br_from_value(self);
+    b = *get_br_from_value(other);
+    return (a == b) ? Qtrue : Qfalse;
+}
+
 static VALUE br_match_operator(VALUE self, VALUE str) {
     int start = br_reg_search(self, str);
     if (start < 0) {
@@ -277,6 +287,8 @@ extern "C" {
         rb_define_method(rb_cBoostRegexp, "match", RUBY_METHOD_FUNC(br_reg_do_match), 1);
         rb_define_method(rb_cBoostRegexp, "options", RUBY_METHOD_FUNC(br_options), 0);
         rb_define_method(rb_cBoostRegexp, "~", RUBY_METHOD_FUNC(br_tilde_operator), 0);
+        rb_define_method(rb_cBoostRegexp, "==", RUBY_METHOD_FUNC(br_eql), 1);
+        rb_define_method(rb_cBoostRegexp, "eql?", RUBY_METHOD_FUNC(br_eql), 1);
         
         rb_define_const(rb_cBoostRegexp, "NORMAL", UINT2NUM(boost::regex_constants::normal));
         rb_define_const(rb_cBoostRegexp, "ECMASCRIPT", UINT2NUM(boost::regex_constants::ECMAScript));

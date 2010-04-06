@@ -36,6 +36,34 @@ describe Boost::Regexp, "#options" do
   end
 end
 
+describe Boost::Regexp, "#==" do
+  it "correctly identifies two equal regexps" do
+    a = Boost::Regexp.new("abcd[efg]")
+    b = Boost::Regexp.new("abcd[efg]")
+    a.should == b
+  end
+  
+  it "correctly identifies two different regexps" do
+    a = Boost::Regexp.new("abcd[efg]")
+    b = Boost::Regexp.new("abcd   [efg]")
+    a.should_not == b
+  end
+end
+
+describe Boost::Regexp, "#eql?" do
+  it "correctly identifies two equal regexps using eql?" do
+    a = Boost::Regexp.new("abcd[efg]")
+    b = Boost::Regexp.new("abcd[efg]")
+    a.should eql(b)
+  end
+  
+  it "correctly identifies two different regexps" do
+    a = Boost::Regexp.new("abcd[efg]")
+    b = Boost::Regexp.new("abcd   [efg]")
+    a.should_not eql(b)
+  end
+end
+
 describe Boost::Regexp, "#=~" do
   it "returns the position of the match" do
     result = Boost::Regexp.new("abcd") =~ "zxabcdefg"
