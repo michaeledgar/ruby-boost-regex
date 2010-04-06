@@ -159,4 +159,11 @@ describe Boost::Regexp, "flags" do
     lambda { Boost::Regexp.new("[[:alnum]]", Boost::Regexp::NO_EXCEPTIONS)}.should_not raise_exception(ArgumentError)
   end
   
+  it "ignores whitespace when IGNORE_WHITESPACE is set" do
+    Boost::Regexp.new("ab cd", Boost::Regexp::IGNORE_WHITESPACE).match("abcd").should_not be_nil
+  end
+  
+  it "doesn't ignore whitespace when IGNORE_WHITESPACE is off" do
+    Boost::Regexp.new("ab cd").match("abcd").should be_nil
+  end
 end

@@ -212,7 +212,7 @@ br_reg_do_match(VALUE self, VALUE str) {
     if (br_reg_match_iters(str, start, end, matches, reg)) {
         return rb_backref_get();
     } else {
-        return -1;
+        return Qnil;
     }
 }
 
