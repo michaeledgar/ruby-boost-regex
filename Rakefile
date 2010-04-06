@@ -5,8 +5,9 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "ruby-boost-regex"
-    gem.summary = %Q{Wraps Boost::Regex in a Ruby binding}
-    gem.description = %Q{TODO: longer description of your gem}
+    gem.summary = %Q{Wraps Boost.Regex in a Ruby binding}
+    gem.description = %Q{Provides a complete drop-in replacement for Regexp based on the C++ Boost library's Regex } +
+                      %Q{class. Enables access to a wide variety of configuration flags that Boost uses.}
     gem.email = "michael.j.edgar@dartmouth.edu"
     gem.homepage = "http://github.com/michaeledgar/ruby-boost-regex"
     gem.authors = ["Michael Edgar"]
