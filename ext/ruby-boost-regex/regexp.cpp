@@ -108,11 +108,19 @@ static VALUE br_alloc(VALUE klass) {
  * Initializes a regexp with a pattern and options.
  * The boost regex is already allocated so we just call the constructor here.
  */
-VALUE br_init(VALUE self, VALUE obj) {
-    boost::regex *reg = get_br_from_value(self);
-    VALUE str = rb_convert_type(obj, T_STRING, "String", "to_s");
+VALUE br_init(int argc, VALUE *argv, VALUE self) {
+    VALUE reg_to_convert, flags;
+    boost::regex *reg;
+    VALUE str;
+    rb_scan_args(argc, argv, "11", &reg_to_convert, &flags);
+
+    reg = get_br_from_value(self);
+    str = rb_convert_type(reg_to_convert, T_STRING, "String", "to_s");
+    if (NIL_P(flags)) {
+        flags = UINT2NUM(boost::regex_constants::normal);
+    }
     try {
-        *reg = boost::regex(RSTRING_PTR(str));
+        *reg = boost::regex(RSTRING_PTR(str), FIX2UINT(flags));
     } catch (boost::regex_error& exc) {
         // C++ exceptions have to be re-raised as ruby
         rb_raise(rb_eArgError, "Invalid regular expression");
@@ -247,13 +255,45 @@ extern "C" {
         rb_cMatch = rb_const_get(rb_cObject, rb_intern("MatchData"));
         rb_mBoost = rb_define_module("Boost");
         rb_cBoostRegexp = rb_define_class_under(rb_mBoost, "Regexp", rb_cObject);
+        
         rb_define_alloc_func(rb_cBoostRegexp, br_alloc);
-        rb_define_method(rb_cBoostRegexp, "initialize", RUBY_METHOD_FUNC(br_init), 1);
+        rb_define_method(rb_cBoostRegexp, "initialize", RUBY_METHOD_FUNC(br_init), -1);
         rb_define_method(rb_cBoostRegexp, "=~", RUBY_METHOD_FUNC(br_match_operator), 1);
         rb_define_method(rb_cBoostRegexp, "===", RUBY_METHOD_FUNC(br_match_eqq_operator), 1);
         rb_define_method(rb_cBoostRegexp, "inspect", RUBY_METHOD_FUNC(br_inspect), 0);
         rb_define_method(rb_cBoostRegexp, "source", RUBY_METHOD_FUNC(br_source), 0);
         rb_define_method(rb_cBoostRegexp, "match", RUBY_METHOD_FUNC(br_reg_do_match), 1);
         
+        rb_define_const(rb_cBoostRegexp, "NORMAL", UINT2NUM(boost::regex_constants::normal));
+        rb_define_const(rb_cBoostRegexp, "ECMASCRIPT", UINT2NUM(boost::regex_constants::ECMAScript));
+        rb_define_const(rb_cBoostRegexp, "JAVASCRIPT", UINT2NUM(boost::regex_constants::JavaScript));
+        rb_define_const(rb_cBoostRegexp, "JSCRIPT", UINT2NUM(boost::regex_constants::JScript));
+        rb_define_const(rb_cBoostRegexp, "PERL", UINT2NUM(boost::regex_constants::perl));
+        rb_define_const(rb_cBoostRegexp, "BASIC", UINT2NUM(boost::regex_constants::basic));
+        rb_define_const(rb_cBoostRegexp, "SED", UINT2NUM(boost::regex_constants::sed));
+        rb_define_const(rb_cBoostRegexp, "EXTENDED", UINT2NUM(boost::regex_constants::extended));
+        rb_define_const(rb_cBoostRegexp, "AWK", UINT2NUM(boost::regex_constants::awk));
+        rb_define_const(rb_cBoostRegexp, "GREP", UINT2NUM(boost::regex_constants::grep));
+        rb_define_const(rb_cBoostRegexp, "EGREP", UINT2NUM(boost::regex_constants::egrep));
+        rb_define_const(rb_cBoostRegexp, "IGNORECASE", UINT2NUM(boost::regex_constants::icase));
+        rb_define_const(rb_cBoostRegexp, "NO_SUBS", UINT2NUM(boost::regex_constants::nosubs));
+        rb_define_const(rb_cBoostRegexp, "OPTIMIZE", UINT2NUM(boost::regex_constants::optimize));
+        rb_define_const(rb_cBoostRegexp, "COLLATE", UINT2NUM(boost::regex_constants::collate));
+        
+        rb_define_const(rb_cBoostRegexp, "NO_EXCEPTIONS", UINT2NUM(boost::regex_constants::no_except));
+        rb_define_const(rb_cBoostRegexp, "SAVE_SUBEXPRESSION_LOCS", UINT2NUM(boost::regex_constants::save_subexpression_location));
+        
+        rb_define_const(rb_cBoostRegexp, "NO_MOD_M", UINT2NUM(boost::regex_constants::no_mod_m));
+        rb_define_const(rb_cBoostRegexp, "DOTS_NEVER_NEWLINES", UINT2NUM(boost::regex_constants::no_mod_s));
+        rb_define_const(rb_cBoostRegexp, "DOTS_MATCH_NEWLINES", UINT2NUM(boost::regex_constants::mod_s));
+        rb_define_const(rb_cBoostRegexp, "IGNORE_WHITESPACE", UINT2NUM(boost::regex_constants::mod_x));
+        rb_define_const(rb_cBoostRegexp, "NO_EMPTY_EXPRESSIONS", UINT2NUM(boost::regex_constants::no_empty_expressions));
+        
+        rb_define_const(rb_cBoostRegexp, "NO_CHAR_CLASSES", UINT2NUM(boost::regex_constants::no_char_classes));
+        rb_define_const(rb_cBoostRegexp, "NO_ESCAPE_IN_LISTS", UINT2NUM(boost::regex_constants::no_escape_in_lists));
+        rb_define_const(rb_cBoostRegexp, "NO_INTERVALS", UINT2NUM(boost::regex_constants::no_intervals));
+        rb_define_const(rb_cBoostRegexp, "BK_PLUS_QM", UINT2NUM(boost::regex_constants::bk_plus_qm));
+        rb_define_const(rb_cBoostRegexp, "BK_VBAR", UINT2NUM(boost::regex_constants::bk_vbar));
+        rb_define_const(rb_cBoostRegexp, "LITERAL", UINT2NUM(boost::regex_constants::literal));
     }
 }
