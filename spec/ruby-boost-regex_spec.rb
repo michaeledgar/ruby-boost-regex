@@ -20,6 +20,38 @@ describe Boost::Regexp do
     reg = Boost::Regexp.new(/abc/)
     reg.should match("jklabcdef")
   end
+  
+  it "has a source method" do
+    Boost::Regexp.new("abc").should respond_to(:source)
+  end
+  
+  it "has an options method" do
+    Boost::Regexp.new("abc").should respond_to(:options)
+  end
+  
+  it "has a match method" do
+    Boost::Regexp.new("abc").should respond_to(:match)
+  end
+  
+  it "has a eql? method" do
+    Boost::Regexp.new("abc").should respond_to(:eql?)
+  end
+  
+  it "has a =~ method" do
+    Boost::Regexp.new("abc").should respond_to(:=~)
+  end
+  
+  it "has a ~ method" do
+    Boost::Regexp.new("abc").should respond_to(:~)
+  end
+  
+  it "has a === method" do
+    Boost::Regexp.new("abc").should respond_to(:===)
+  end
+  
+  it "has a == method" do
+    Boost::Regexp.new("abc").should respond_to(:==)
+  end
 end
 
 describe Boost::Regexp, "#source" do
