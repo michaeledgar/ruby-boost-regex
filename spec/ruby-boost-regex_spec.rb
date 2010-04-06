@@ -6,11 +6,6 @@ describe Boost::Regexp do
     reg.should be_a(Boost::Regexp)
   end
   
-  it "looks like a regex when inspected" do
-    reg = Boost::Regexp.new("\\d{3}")
-    reg.inspect.should == "/\\d{3}/"
-  end
-  
   it "can be initialized with a string" do
     reg = Boost::Regexp.new("abc")
     reg.should match("jklabcdef")
@@ -51,6 +46,24 @@ describe Boost::Regexp do
   
   it "has a == method" do
     Boost::Regexp.new("abc").should respond_to(:==)
+  end
+end
+
+describe Boost::Regexp, "#inspect" do
+  it "extracts the source for normal regexes" do
+    Boost::Regexp.new("\\d{3}").inspect.should == "/\\d{3}/"
+  end
+  
+  it "shows the ignore-case flag when enabled" do
+    Boost::Regexp.new("\\d{3}", Boost::Regexp::IGNORECASE).inspect.should == "/\\d{3}/i"
+  end
+  
+  it "shows the multiline flag when enabled" do
+    Boost::Regexp.new("\\d{3}", Boost::Regexp::DOTS_MATCH_NEWLINES).inspect.should == "/\\d{3}/m"
+  end
+  
+  it "shows the ignore-whitespace flag when enabled" do
+    Boost::Regexp.new("\\d{3}", Boost::Regexp::IGNORE_WHITESPACE).inspect.should == "/\\d{3}/x"
   end
 end
 

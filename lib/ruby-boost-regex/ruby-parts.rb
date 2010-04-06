@@ -13,5 +13,13 @@ module Boost
     def casefold?
       (self.options & IGNORECASE) > 0
     end
+    
+    def inspect
+      base = "/#{source}/"
+      base << "m" if options & Boost::Regexp::DOTS_MATCH_NEWLINES > 0
+      base << "i" if options & Boost::Regexp::IGNORECASE > 0
+      base << "x" if options & Boost::Regexp::IGNORE_WHITESPACE > 0
+      base
+    end
   end
 end

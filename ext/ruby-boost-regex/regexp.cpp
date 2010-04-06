@@ -252,13 +252,6 @@ static VALUE br_options(VALUE self) {
     return UINT2NUM(reg.flags());
 }
 
-static VALUE br_inspect(VALUE self) {
-    boost::regex reg = *get_br_from_value(self);
-    std::string slash = "/";
-    std::string finished = (slash + reg.str() + slash).c_str();
-    return rb_str_new(finished.c_str(), finished.size());
-}
-
 static VALUE br_source(VALUE self) {
     boost::regex reg = *get_br_from_value(self);
     std::string result = reg.str();
@@ -282,7 +275,6 @@ extern "C" {
         rb_define_method(rb_cBoostRegexp, "initialize", RUBY_METHOD_FUNC(br_init), -1);
         rb_define_method(rb_cBoostRegexp, "=~", RUBY_METHOD_FUNC(br_match_operator), 1);
         rb_define_method(rb_cBoostRegexp, "===", RUBY_METHOD_FUNC(br_match_eqq_operator), 1);
-        rb_define_method(rb_cBoostRegexp, "inspect", RUBY_METHOD_FUNC(br_inspect), 0);
         rb_define_method(rb_cBoostRegexp, "source", RUBY_METHOD_FUNC(br_source), 0);
         rb_define_method(rb_cBoostRegexp, "match", RUBY_METHOD_FUNC(br_reg_do_match), 1);
         rb_define_method(rb_cBoostRegexp, "options", RUBY_METHOD_FUNC(br_options), 0);
