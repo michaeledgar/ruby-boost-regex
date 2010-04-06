@@ -102,4 +102,27 @@ describe Boost::Regexp, "#match" do
     result[2].should == "123"
     result[3].should == "4567"
   end
-end  
+  it "sets the value of Regexp#last_match" do
+    result = Boost::Regexp.new('\d{3}').match("abc123def")
+    result.should == Regexp.last_match
+  end
+  it "sets the special match variables when a match succeeds" do
+    Boost::Regexp.new("abcd").match "xyzabcdef"
+    $`.should == "xyz"
+  end
+  it "sets the special match variables to nil when a match fails" do
+    Boost::Regexp.new("abcd").match "uqioer"
+    $'.should be_nil
+  end
+end
+
+describe Boost::Regexp, "flags" do
+  it "matches with a case-insensitivity flag" do
+    result = Boost::Regexp.new('abc', Boost::Regexp::IGNORECASE) =~ "DEFABCJKL"
+    result.should == 3
+  end
+  it "responds correctly to casefold?" do
+    Boost::Regexp.new('abc', Boost::Regexp::IGNORECASE).casefold?.should be_true
+    Boost::Regexp.new('abc').casefold?.should be_false
+  end
+end
