@@ -44,6 +44,38 @@ Of course, Boost gives us lots of crazy flags:
     reg =~ "zzzABCDEF" # ==> 3
     puts $1  # ==> nil
     
+## Benchmarks
+
+I adapted the [ruby-benchmark-suite](http://github.com/acangiano/ruby-benchmark-suite)'s bm\_regex\_dna
+benchmark, which is used in the Computer Language Shootout.  However, it uses str.scan(), which will fail
+if confronted with a non-standard Regexp.  So I had to write my own, which is less optimized.  The
+[benchmark code](http://github.com/michaeledgar/ruby-boost-regex/blob/master/benchmark/benchmark.rb) is
+free to be scrutinized!  It uses the standard benchmark module because lifting the spiffy one from ruby-benchmark-suite
+proved to be too much of a hassle for now.
+
+Anyway, here's some results:
+
+    DNA-Matching (Computer Language Shootout)
+    =========================================
+    Rehearsal ------------------------------------------------
+    Normal regex  17.190000   0.020000  17.210000 ( 17.278168)
+    Boost regex   12.120000   0.030000  12.150000 ( 12.213959)
+    -------------------------------------- total: 29.360000sec
+    
+                       user     system      total        real
+    Normal regex  17.050000   0.020000  17.070000 ( 17.082539)
+    Boost regex   12.000000   0.030000  12.030000 ( 12.040932)
+    
+    Failing to match a phone number in a big string of text
+    =======================================================
+    Rehearsal ------------------------------------------------
+    Normal regex   0.070000   0.000000   0.070000 (  0.070072)
+    Boost regex    0.030000   0.000000   0.030000 (  0.034858)
+    --------------------------------------- total: 0.100000sec
+    
+                       user     system      total        real
+    Normal regex   0.070000   0.000000   0.070000 (  0.070087)
+    Boost regex    0.040000   0.000000   0.040000 (  0.035052)
 
 
 ## Usage
