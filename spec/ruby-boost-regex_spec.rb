@@ -31,14 +31,17 @@ describe Boost::Regexp, "#=~" do
     result = Boost::Regexp.new("abcd") =~ "zxabcdefg"
     result.should == 2
   end
+  
   it "returns nil on no match" do
     result = Boost::Regexp.new("abcd") =~ "aj3ioqh"
     result.should be_nil
   end
+  
   it "sets the special match variables on a match" do
     Boost::Regexp.new("abcd") =~ "xyzabcdef"
     $`.should == "xyz"
   end
+  
   it "sets the special match variables to nil when a match fails" do
     Boost::Regexp.new("abcd") =~ "uqioer"
     $'.should be_nil
@@ -50,14 +53,17 @@ describe Boost::Regexp, "#===" do
     result = Boost::Regexp.new("abcd") === "uioabcdefg"
     result.should be_true
   end
+  
   it "returns false when a match fails" do
     result = Boost::Regexp.new("abcd") === "uiot"
     result.should be_false
   end
+  
   it "sets the special match variables when a match succeeds" do
     Boost::Regexp.new("abcd") === "xyzabcdef"
     $`.should == "xyz"
   end
+  
   it "sets the special match variables to nil when a match fails" do
     Boost::Regexp.new("abcd") === "uqioer"
     $'.should be_nil
@@ -70,16 +76,19 @@ describe Boost::Regexp, "#~" do
     result = ~Boost::Regexp.new("abcd")
     result.should == 3
   end
+  
   it "negatively matches against $_" do
     $_ = "12345"
     result = ~Boost::Regexp.new("efgh")
     result.should be_nil
   end
+  
   it "sets the special match variables when a match succeeds" do
     $_ = "xyzabcdef"
     ~Boost::Regexp.new("abcd")
     $`.should == "xyz"
   end
+  
   it "sets the special match variables to nil when a match fails" do
     $_ = "uqioer"
     ~Boost::Regexp.new("abcd")
@@ -91,10 +100,12 @@ describe Boost::Regexp, "#match" do
   it "returns a MatchData object" do
     Boost::Regexp.new('\d{3}').match("abc1234def").should be_a(MatchData)
   end
+  
   it "returns $~" do
     result = Boost::Regexp.new('\d{3}').match("abc1234def")
     result.should == $~
   end
+  
   it "provides captured subexpressions" do
     result = Boost::Regexp.new('(\d{3})-(\d{3})-(\d{4})').match("abc 555-123-4567 def")
     result[0].should == "555-123-4567"
@@ -102,14 +113,17 @@ describe Boost::Regexp, "#match" do
     result[2].should == "123"
     result[3].should == "4567"
   end
+  
   it "sets the value of Regexp#last_match" do
     result = Boost::Regexp.new('\d{3}').match("abc123def")
     result.should == Regexp.last_match
   end
+  
   it "sets the special match variables when a match succeeds" do
     Boost::Regexp.new("abcd").match "xyzabcdef"
     $`.should == "xyz"
   end
+  
   it "sets the special match variables to nil when a match fails" do
     Boost::Regexp.new("abcd").match "uqioer"
     $'.should be_nil
@@ -121,8 +135,28 @@ describe Boost::Regexp, "flags" do
     result = Boost::Regexp.new('abc', Boost::Regexp::IGNORECASE) =~ "DEFABCJKL"
     result.should == 3
   end
+  
   it "responds correctly to casefold?" do
     Boost::Regexp.new('abc', Boost::Regexp::IGNORECASE).casefold?.should be_true
     Boost::Regexp.new('abc').casefold?.should be_false
   end
+  
+  it "ignores subexpressions when NO_SUBS is on" do
+    result = Boost::Regexp.new('abc(def)', Boost::Regexp::NO_SUBS).match("abcdef")
+    result[1].should be_nil
+  end
+  
+  it "allows subexpressions when NO_SUBS is off" do
+    result = Boost::Regexp.new('abc(def)').match("abcdef")
+    result[1].should == "def"
+  end
+  
+  it "raises an exception when given an invalid regexp and NO_EXCEPTIONS is off" do
+    lambda { Boost::Regexp.new("[[:alnum]]")}.should raise_exception(ArgumentError)
+  end
+  
+  it "does not raise an exception when given an invalid regexp and NO_EXCEPTIONS is on" do
+    lambda { Boost::Regexp.new("[[:alnum]]", Boost::Regexp::NO_EXCEPTIONS)}.should_not raise_exception(ArgumentError)
+  end
+  
 end
