@@ -120,7 +120,7 @@ VALUE br_init(int argc, VALUE *argv, VALUE self) {
     }
     try {
         if (TYPE(reg_to_convert) == T_REGEXP) {
-            str = rb_funcall(reg_to_convert, rb_intern("source"), 0);   
+            str = rb_funcall(reg_to_convert, rb_intern("source"), 0);
         } else {
             str = rb_convert_type(reg_to_convert, T_STRING, "String", "to_s");
         }

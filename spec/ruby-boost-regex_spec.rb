@@ -10,6 +10,16 @@ describe Boost::Regexp do
     reg = Boost::Regexp.new("\\d{3}")
     reg.inspect.should == "/\\d{3}/"
   end
+  
+  it "can be initialized with a string" do
+    reg = Boost::Regexp.new("abc")
+    reg.should match("jklabcdef")
+  end
+  
+  it "can be initialized with a regexp" do
+    reg = Boost::Regexp.new(/abc/)
+    reg.should match("jklabcdef")
+  end
 end
 
 describe Boost::Regexp, "#source" do
