@@ -225,7 +225,7 @@ static VALUE br_match_operator(VALUE self, VALUE str) {
 }
 
 static VALUE br_match_eqq_operator(VALUE self, VALUE str) {
-    unsigned int start = br_reg_search(self, str);
+    int start = br_reg_search(self, str);
     if (start < 0) {
         return Qfalse;
     } else {
