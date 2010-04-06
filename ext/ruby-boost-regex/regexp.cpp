@@ -233,6 +233,11 @@ static VALUE br_match_eqq_operator(VALUE self, VALUE str) {
     }
 }
 
+static VALUE br_options(VALUE self) {
+    boost::regex reg = *get_br_from_value(self);
+    return UINT2NUM(reg.flags());
+}
+
 static VALUE br_inspect(VALUE self) {
     boost::regex reg = *get_br_from_value(self);
     std::string slash = "/";
@@ -246,7 +251,10 @@ static VALUE br_source(VALUE self) {
     return rb_str_new(result.c_str(), result.size());
 }
 
-
+static VALUE br_tilde_operator(VALUE self) {
+    VALUE target = rb_gv_get("$_");
+    return br_match_operator(self, target);
+}
 
 extern "C" {
     VALUE Init_BoostRegexHook()
@@ -263,6 +271,8 @@ extern "C" {
         rb_define_method(rb_cBoostRegexp, "inspect", RUBY_METHOD_FUNC(br_inspect), 0);
         rb_define_method(rb_cBoostRegexp, "source", RUBY_METHOD_FUNC(br_source), 0);
         rb_define_method(rb_cBoostRegexp, "match", RUBY_METHOD_FUNC(br_reg_do_match), 1);
+        rb_define_method(rb_cBoostRegexp, "options", RUBY_METHOD_FUNC(br_options), 0);
+        rb_define_method(rb_cBoostRegexp, "~", RUBY_METHOD_FUNC(br_tilde_operator), 0);
         
         rb_define_const(rb_cBoostRegexp, "NORMAL", UINT2NUM(boost::regex_constants::normal));
         rb_define_const(rb_cBoostRegexp, "ECMASCRIPT", UINT2NUM(boost::regex_constants::ECMAScript));
