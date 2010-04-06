@@ -115,11 +115,15 @@ VALUE br_init(int argc, VALUE *argv, VALUE self) {
     rb_scan_args(argc, argv, "11", &reg_to_convert, &flags);
 
     reg = get_br_from_value(self);
-    str = rb_convert_type(reg_to_convert, T_STRING, "String", "to_s");
     if (NIL_P(flags)) {
         flags = UINT2NUM(boost::regex_constants::normal);
     }
     try {
+        if (TYPE(reg_to_convert) == T_REGEXP) {
+            str = rb_funcall(reg_to_convert, rb_intern("source"), 0);   
+        } else {
+            str = rb_convert_type(reg_to_convert, T_STRING, "String", "to_s");
+        }
         *reg = boost::regex(RSTRING_PTR(str), FIX2UINT(flags));
     } catch (boost::regex_error& exc) {
         // C++ exceptions have to be re-raised as ruby
