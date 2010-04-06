@@ -11,6 +11,12 @@ Spec::Matchers.define :have_flag do |flag|
   end
 end
 
+Spec::Matchers.define :match do |string|
+  match do |regexp|
+    regexp.match(string) != nil
+  end
+end
+
 Spec::Runner.configure do |config|
   
 end

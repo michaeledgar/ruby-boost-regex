@@ -132,8 +132,7 @@ end
 
 describe Boost::Regexp, "flags" do
   it "matches with a case-insensitivity flag" do
-    result = Boost::Regexp.new('abc', Boost::Regexp::IGNORECASE) =~ "DEFABCJKL"
-    result.should == 3
+    Boost::Regexp.new('abc', Boost::Regexp::IGNORECASE).should match "DEFABCJKL"
   end
   
   it "responds correctly to casefold?" do
@@ -160,10 +159,18 @@ describe Boost::Regexp, "flags" do
   end
   
   it "ignores whitespace when IGNORE_WHITESPACE is set" do
-    Boost::Regexp.new("ab cd", Boost::Regexp::IGNORE_WHITESPACE).match("abcd").should_not be_nil
+    Boost::Regexp.new("ab cd", Boost::Regexp::IGNORE_WHITESPACE).should match("abcd")
   end
   
   it "doesn't ignore whitespace when IGNORE_WHITESPACE is off" do
-    Boost::Regexp.new("ab cd").match("abcd").should be_nil
+    Boost::Regexp.new("ab cd").should_not match "abcd"
+  end
+  
+  it "allows dots to match newlines when DOTS_MATCH_NEWLINES is on" do
+    Boost::Regexp.new("abc.def", Boost::Regexp::DOTS_MATCH_NEWLINES).should match "abc\ndef"
+  end
+  
+  it "doesn't allow dots to match newlines when DOTS_NEVER_NEWLINES is on" do
+    Boost::Regexp.new("abc.def", Boost::Regexp::DOTS_NEVER_NEWLINES).should_not match "abc\ndef"
   end
 end
