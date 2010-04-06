@@ -12,6 +12,7 @@ begin
     gem.homepage = "http://github.com/michaeledgar/ruby-boost-regex"
     gem.authors = ["Michael Edgar"]
     gem.add_development_dependency "rspec", ">= 1.2.9"
+    gem.add_development_dependency "lorem", ">= 0.1.2"
     
     gem.extensions = ["ext/ruby-boost-regex/extconf.rb"]
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
@@ -36,6 +37,10 @@ end
 task :spec => :check_dependencies
 
 task :default => :spec
+
+task :benchmark do
+  ruby "benchmark/benchmark.rb"
+end
 
 require 'rake/rdoctask'
 Rake::RDocTask.new do |rdoc|
