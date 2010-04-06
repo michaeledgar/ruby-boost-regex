@@ -12,15 +12,39 @@ normal `Regexp`s, and then add Boost features. So far...
 * Supports `=~` operator, `===` operator (for `case...when`)
 * Supports `#match` method as in normal Regexps, returning the same
   type of object (`MatchData`).
+* Spiffy monkey patch (see below)
   
-## Ideas down the line
+## Cool monkey patch
 
-Add a #boost! method to normal Regexps, so you can use syntax like:
+So monkey patching is bad, right? Right. And rubyists monkey patch all the time,
+which makes us bad people.  Well, this module adds a new, alternate regex, but
+Ruby has a syntax for regexes already:
 
-    reg = /\d{3}-\d{3}-\d{4}/.boost!(optional_boost_only_flags)
+    reg = /\d{3}/
     
-Allowing you to enjoy literal Regexp syntax with any benefits that Boost
-might provide.
+This is nice because we don't have to escape the backslashes, plus it looks really
+nice with syntax highlighting.  With these boost regexes, you'll either have to do
+
+    reg = Boost::Regexp.new("\\d{3}")
+    # or
+    reg = Boost::Regexp.new(/\d{3}/)
+    
+Why do all that typing? We have a literal regex syntax!  But it creates normal regexes.
+So, we have a compromise:
+
+    Boost::Regexp.enable_monkey_patch! # only have to do this once
+    reg = /\d{3}/.boost!
+    reg.class # ==> Boost::Regexp
+    
+Cool, eh?
+
+Of course, Boost gives us lots of crazy flags:
+
+    reg = /abc(def)/.boost!(Boost::Regexp::NO_SUBS & Boost::Regexp::IGNORECASE)
+    reg =~ "zzzABCDEF" # ==> 3
+    puts $1  # ==> nil
+    
+
 
 ## Usage
 
