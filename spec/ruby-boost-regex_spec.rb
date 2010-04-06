@@ -174,3 +174,22 @@ describe Boost::Regexp, "flags" do
     Boost::Regexp.new("abc.def", Boost::Regexp::DOTS_NEVER_NEWLINES).should_not match "abc\ndef"
   end
 end
+
+describe Boost::Regexp, "#enable_monkey_patch!" do
+  it "adds a boost! method to normal Regexps" do
+    Boost::Regexp.enable_monkey_patch!
+    /hello/.should respond_to(:boost!)
+  end
+  
+  it "adds a boost! method that converts Regexps to Boost::Regexps" do
+    Boost::Regexp.enable_monkey_patch!
+    reg = /hello/.boost!
+    reg.should be_a(Boost::Regexp)
+  end
+  
+  it "allows flags to be passed into the added boost! method" do
+    Boost::Regexp.enable_monkey_patch!
+    reg = /hello/.boost!(Boost::Regexp::IGNORECASE)
+    reg.casefold?.should be_true
+  end
+end
