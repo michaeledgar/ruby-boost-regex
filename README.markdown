@@ -89,6 +89,10 @@ Don't have it as a gem yet. Sorry! But you could do this in theory:
     p matches[2] # ==> "456"
 
 
+## Installation
+
+    gem install ruby-boost-regex
+
 ## Note on Patches/Pull Requests
  
 * Fork the project.
