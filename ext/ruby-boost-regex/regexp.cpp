@@ -3,7 +3,7 @@
 #include <string>
 #include <exception>
 #include "ruby.h"
-#include "re.h"
+#include "ruby/re.h"
 
 static VALUE rb_mBoost;
 static VALUE rb_cBoostRegexp;
