@@ -80,13 +80,21 @@ Anyway, here's some results:
 
 ## Usage
 
-Don't have it as a gem yet. Sorry! But you could do this in theory:
+Install the gem, use as follows:
+
+    require 'ruby-boost-regex'
 
     r = Boost::Regexp.new("(\\d{3})-(\\d{3})-(\\d{4})")
     r =~ "555-123-4567"
     p $1 # ==> "555"
     matches = r.match("123-456-7890")
     p matches[2] # ==> "456"
+    
+    Boost::Regex.enable_monkey_patch!
+    
+    r = /hello|world/i.boost!
+    r =~ "i'm Mike. Hello!" #==> 10
+    
 
 
 ## Installation
