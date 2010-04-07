@@ -8,6 +8,10 @@
 static VALUE rb_mBoost;
 static VALUE rb_cBoostRegexp;
 
+static VALUE rb_kRegexpMultiline;
+static VALUE rb_kRegexpIgnorecase;
+static VALUE rb_kRegexpExtended;
+
 ///////// imported from re.c
 
 #define RE_TALLOC(n,t)  ((t*)alloca((n)*sizeof(t)))
@@ -112,6 +116,7 @@ VALUE br_init(int argc, VALUE *argv, VALUE self) {
     VALUE reg_to_convert, flags;
     boost::regex *reg;
     VALUE str;
+    int newflags, oldflagsint;
     rb_scan_args(argc, argv, "11", &reg_to_convert, &flags);
 
     reg = get_br_from_value(self);
@@ -121,6 +126,19 @@ VALUE br_init(int argc, VALUE *argv, VALUE self) {
     try {
         if (TYPE(reg_to_convert) == T_REGEXP) {
             str = rb_funcall(reg_to_convert, rb_intern("source"), 0);
+            // calculate the flags to use
+            newflags = NUM2UINT(flags);
+            VALUE oldflags = rb_funcall(reg_to_convert, rb_intern("options"), 0);
+            int oldflagsint = FIX2INT(oldflags);
+            // convert ruby regexp flags to boost regex flags
+            if (oldflagsint & FIX2INT(rb_kRegexpIgnorecase))
+                newflags |= boost::regex_constants::icase;
+            if (oldflagsint & FIX2INT(rb_kRegexpMultiline))
+                newflags |= boost::regex_constants::mod_s;
+            if (oldflagsint & FIX2INT(rb_kRegexpExtended))
+                newflags |= boost::regex_constants::mod_x;
+            // convert back to fixnum
+            flags = UINT2NUM(newflags);
         } else {
             str = rb_convert_type(reg_to_convert, T_STRING, "String", "to_s");
         }
@@ -267,7 +285,12 @@ extern "C" {
     VALUE Init_BoostRegexHook()
     {
         rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
+        
         rb_cMatch = rb_const_get(rb_cObject, rb_intern("MatchData"));
+        rb_kRegexpMultiline  = rb_const_get(rb_cRegexp, rb_intern("MULTILINE"));
+        rb_kRegexpIgnorecase = rb_const_get(rb_cRegexp, rb_intern("IGNORECASE"));
+        rb_kRegexpExtended   = rb_const_get(rb_cRegexp, rb_intern("EXTENDED"));
+        
         rb_mBoost = rb_define_module("Boost");
         rb_cBoostRegexp = rb_define_class_under(rb_mBoost, "Regexp", rb_cObject);
         

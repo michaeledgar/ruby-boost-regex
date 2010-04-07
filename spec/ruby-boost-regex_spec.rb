@@ -16,6 +16,27 @@ describe Boost::Regexp do
     reg.should match("jklabcdef")
   end
   
+  it "can be initialized with a regexp with the ignorecase flag" do
+    reg = Boost::Regexp.new(/abc/i)
+    reg.options.should have_flag(Boost::Regexp::IGNORECASE)
+  end
+  
+  it "can be initialized with a regexp with the ignore whitespace flag" do
+    reg = Boost::Regexp.new(/abc/x)
+    reg.options.should have_flag(Boost::Regexp::IGNORE_WHITESPACE)
+  end
+  
+  it "can be initialized with a regexp with the dots-match-newlines flag" do
+    reg = Boost::Regexp.new(/abc/m)
+    reg.options.should have_flag(Boost::Regexp::DOTS_MATCH_NEWLINES)
+  end
+  
+  it "will not initialize without unrequested flags" do
+    reg = Boost::Regexp.new(/abc/x)
+    reg.options.should_not have_flag(Boost::Regexp::DOTS_MATCH_NEWLINES)
+    reg.options.should_not have_flag(Boost::Regexp::IGNORECASE)
+  end
+  
   it "has a source method" do
     Boost::Regexp.new("abc").should respond_to(:source)
   end
