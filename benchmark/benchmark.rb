@@ -8,7 +8,10 @@
 require 'benchmark'
 require 'rubygems'
 require 'ruby-boost-regex'
+require 'oniguruma'
 require 'lorem'
+
+include Oniguruma
 
 fname = File.dirname(__FILE__) + "/fasta.input" 
 seq = File.read(fname)
@@ -50,16 +53,30 @@ boost_regexes = [
   Boost::Regexp.new('agggta[cgt]a|t[acg]taccct', Boost::Regexp::IGNORECASE),
   Boost::Regexp.new('agggtaa[cgt]|[acg]ttaccct', Boost::Regexp::IGNORECASE)
 ]
+oni_regexes = [
+  ORegexp.new('agggtaaa|tttaccct', :options => OPTION_IGNORECASE),
+  ORegexp.new('[cgt]gggtaaa|tttaccc[acg]', :options => OPTION_IGNORECASE),
+  ORegexp.new('a[act]ggtaaa|tttacc[agt]t', :options => OPTION_IGNORECASE),
+  ORegexp.new('ag[act]gtaaa|tttac[agt]ct', :options => OPTION_IGNORECASE),
+  ORegexp.new('agg[act]taaa|ttta[agt]cct', :options => OPTION_IGNORECASE),
+  ORegexp.new('aggg[acg]aaa|ttt[cgt]ccct', :options => OPTION_IGNORECASE),
+  ORegexp.new('agggt[cgt]aa|tt[acg]accct', :options => OPTION_IGNORECASE),
+  ORegexp.new('agggta[cgt]a|t[acg]taccct', :options => OPTION_IGNORECASE),
+  ORegexp.new('agggtaa[cgt]|[acg]ttaccct', :options => OPTION_IGNORECASE)
+]
+
 puts "DNA-Matching (Computer Language Shootout)"
 puts "========================================="
 Benchmark.bmbm do |x|
     x.report("Normal regex") { 100.times { regexes.each { |reg| fair_scan(seq, reg)}} }
+    x.report("Oniguruma")    { 100.times { oni_regexes.each {|reg| fair_scan(seq, reg)}} }
     x.report("Boost regex")  { 100.times { boost_regexes.each { |reg| fair_scan(seq, reg)}} }
 end
 
 
 reg = /\d{3}-\d{3}-\d{4}/
 boost_reg = Boost::Regexp.new('\d{3}-\d{3}-\d{4}')
+oni_reg = ORegexp.new('\d{3}-\d{3}-\d{4}')
 text = Lorem::Base.new('paragraphs', 200).output
 
 puts ""
@@ -67,5 +84,6 @@ puts "Failing to match a phone number in a big string of text"
 puts "======================================================="
 Benchmark.bmbm do |x|
     x.report("Normal regex") { 100.times { fair_scan(text, reg)}}
+    x.report("Oniguruma")    { 100.times { fair_scan(text, oni_reg)}}
     x.report("Boost regex")  { 100.times { fair_scan(text, boost_reg)}}
 end
