@@ -3,7 +3,12 @@
 #include <string>
 #include <exception>
 #include "ruby.h"
+
+#ifdef RUBY_19
 #include "ruby/re.h"
+#else
+#include "re.h"
+#endif
 
 static VALUE rb_mBoost;
 static VALUE rb_cBoostRegexp;
