@@ -53,7 +53,8 @@ if confronted with a non-standard Regexp.  So I had to write my own, which is le
 free to be scrutinized!  It uses the standard benchmark module because lifting the spiffy one from ruby-benchmark-suite
 proved to be too much of a hassle for now.
 
-Anyway, here's some results:
+Anyway, here's some results.  2.4Ghz Intel Core 2 Duo, 4GB 1067 Mhz DDR3, Macbook Pro. Ruby 1.8.7 (2008-08-11 patchlevel 72) [universal-darwin10.0]. Oniguruma is the Oniguruma gem for 1.8.x ruby, not the one bundled with Ruby 1.9+. I ran this a few
+times with differing loads, and they always roughly come out to the same result. YMMV.
 
     DNA-Matching (Computer Language Shootout)
     =========================================
@@ -102,7 +103,17 @@ Install the gem, use as follows:
 
 ## Installation
 
+You're going to need Boost.Regex.  You can find the [Boost Project here](http://www.boost.org/), with a
+[Getting Started page](http://www.boost.org/doc/libs/1_42_0/more/getting_started/index.html) for installation.
+
+Ruby-boost-regex expects you to have the boost regex library available as "libboost\_regex.so" or "libboost\_regex.dylib"
+or whatever your platform specifies - the key point is the name "boost\_regex".
+
     gem install ruby-boost-regex
+    
+For the Unicode support I'm trying to get in, you'll need IBM's [ICU project](http://site.icu-project.org/) installed, 
+with the recommended download page you start from [being ICU4C 4.4](http://icu-project.org/download/4.4.html#ICU4C). In addition,
+your Boost libraries must be [configured to use ICU](http://www.boost.org/doc/libs/1_42_0/libs/regex/doc/html/boost_regex/install.html#boost_regex.install.building_with_unicode_and_icu_support).
 
 ## Note on Patches/Pull Requests
  
