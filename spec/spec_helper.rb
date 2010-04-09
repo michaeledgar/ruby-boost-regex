@@ -13,7 +13,7 @@ end
 
 Spec::Matchers.define :match do |string|
   match do |regexp|
-    regexp.match(string) != nil
+    (regexp =~ string) != nil
   end
 end
 

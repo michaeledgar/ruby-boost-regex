@@ -19,6 +19,10 @@ static VALUE rb_kRegexpExtended;
 
 ///////// imported from re.c
 
+#ifndef RUBY_19
+
+// this is 1.8.x global variable stuff
+
 #define RE_TALLOC(n,t)  ((t*)alloca((n)*sizeof(t)))
 #define TMALLOC(n,t)    ((t*)xmalloc((n)*sizeof(t)))
 #define TREALLOC(s,n,t) (s=((t*)xrealloc(s,(n)*sizeof(t))))
@@ -84,6 +88,71 @@ re_copy_registers(struct re_registers *regs1, struct re_registers *regs2)
   regs1->num_regs = regs2->num_regs;
 }
 
+static VALUE get_backref_for_modification() {
+    VALUE match;
+    match = rb_backref_get();
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+        match = match_alloc(rb_cMatch);
+    }
+    else {
+        if (rb_safe_level() >= 3) 
+            OBJ_TAINT(match);
+        else
+            FL_UNSET(match, FL_TAINT);
+    }
+    return match;
+}
+
+static void
+fill_regs_from_smatch(std::string::const_iterator first, 
+                      std::string::const_iterator last, 
+                      struct re_registers *regs, 
+                      boost::smatch matches) 
+{
+    init_regs(regs, matches.size());
+    regs->beg[0] = matches[0].first - first;
+    regs->end[0] = matches[0].second - first;
+    
+    for (int idx = 1; idx <= matches.size(); idx++) {
+        if (!matches[idx].matched) {
+            regs->beg[idx] = regs->end[idx] = -1;
+        } else {
+            regs->beg[idx] = matches[idx].first - first;
+            regs->end[idx] = matches[idx].second - first;
+        }
+    }
+}
+
+static void save_backref_with_smatch(VALUE str, 
+                                     std::string::const_iterator& start, 
+                                     std::string::const_iterator& stop, 
+                                     boost::smatch& matches) 
+{
+    static struct re_registers regs;
+    VALUE match = get_backref_for_modification();
+    RMATCH(match)->str = rb_str_dup(str);
+    fill_regs_from_smatch(start, stop, &regs, matches);
+    re_copy_registers(RMATCH(match)->regs, &regs);
+    rb_backref_set(match);                                     
+}
+
+#else // Is Ruby 1.9+
+
+static void save_backref_with_smatch(VALUE str, 
+                                     std::string::const_iterator& start, 
+                                     std::string::const_iterator& stop, 
+                                     boost::smatch& matches) 
+{
+    static char warned = 0;
+    if (!warned) {
+        rb_warn("Global variables will not be matched with Boost::Regexp under Ruby 1.9.");
+        warned = 1;
+    }
+    
+}
+
+#endif RUBY_19
+
 /////////////////////////////
 
 // extracts the boost regex using Data_Get_Struct
@@ -134,7 +203,7 @@ VALUE br_init(int argc, VALUE *argv, VALUE self) {
             // calculate the flags to use
             newflags = NUM2UINT(flags);
             VALUE oldflags = rb_funcall(reg_to_convert, rb_intern("options"), 0);
-            int oldflagsint = FIX2INT(oldflags);
+            oldflagsint = FIX2INT(oldflags);
             // convert ruby regexp flags to boost regex flags
             if (oldflagsint & FIX2INT(rb_kRegexpIgnorecase))
                 newflags |= boost::regex_constants::icase;
@@ -152,37 +221,7 @@ VALUE br_init(int argc, VALUE *argv, VALUE self) {
         // C++ exceptions have to be re-raised as ruby
         rb_raise(rb_eArgError, "Invalid regular expression");
     }
-}
-
-static VALUE get_backref_for_modification() {
-    VALUE match;
-    match = rb_backref_get();
-    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-        match = match_alloc(rb_cMatch);
-    }
-    else {
-        if (rb_safe_level() >= 3) 
-            OBJ_TAINT(match);
-        else
-            FL_UNSET(match, FL_TAINT);
-    }
-    return match;
-}
-
-static void
-fill_regs_from_smatch(std::string::const_iterator first, std::string::const_iterator last, struct re_registers *regs, boost::smatch matches) {
-    init_regs(regs, matches.size());
-    regs->beg[0] = matches[0].first - first;
-    regs->end[0] = matches[0].second - first;
-    
-    for (int idx = 1; idx <= matches.size(); idx++) {
-        if (!matches[idx].matched) {
-            regs->beg[idx] = regs->end[idx] = -1;
-        } else {
-            regs->beg[idx] = matches[idx].first - first;
-            regs->end[idx] = matches[idx].second - first;
-        }
-    }
+    return self;
 }
 
 /**
@@ -191,14 +230,9 @@ fill_regs_from_smatch(std::string::const_iterator first, std::string::const_iter
 static bool 
 br_reg_match_iters(VALUE str, std::string::const_iterator start, std::string::const_iterator stop, boost::smatch& matches, boost::regex reg)
 {
-    static struct re_registers regs;
     try {
         if (boost::regex_search(start, stop, matches, reg)) {
-            VALUE match = get_backref_for_modification();
-            RMATCH(match)->str = rb_str_dup(str);
-            fill_regs_from_smatch(start, stop, &regs, matches);
-            re_copy_registers(RMATCH(match)->regs, &regs);
-            rb_backref_set(match);
+            save_backref_with_smatch(str, start, stop, matches);
             return true;
         } else {
             rb_backref_set(Qnil);
@@ -341,5 +375,7 @@ extern "C" {
         rb_define_const(rb_cBoostRegexp, "BK_PLUS_QM", UINT2NUM(boost::regex_constants::bk_plus_qm));
         rb_define_const(rb_cBoostRegexp, "BK_VBAR", UINT2NUM(boost::regex_constants::bk_vbar));
         rb_define_const(rb_cBoostRegexp, "LITERAL", UINT2NUM(boost::regex_constants::literal));
+        
+        return Qnil;
     }
 }
