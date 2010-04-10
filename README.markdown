@@ -13,7 +13,20 @@ normal `Regexp`s, and then add Boost features. So far...
 * Supports `#match` method as in normal Regexps, returning the same
   type of object (`MatchData`).
 * Spiffy monkey patch (see below)
-  
+* Ruby 1.9 Support
+* Near-perfect drop-in for built-in Regexes.
+
+## Problems
+
+* NO Unicode support. Sorry.
+
+## Global Variables
+
+If you use Ruby's regexes, you probably use the handy-dandy global variables that
+come along with them, especially for quickly-written scripts.  I'm talking about
+our buddies, `$1, $2, $3`, `$\``, `$&`, `$~`. This gem makes sure to set those variables
+so that these global variables still work.
+
 ## Cool monkey patch
 
 So monkey patching is bad, right? Right. And rubyists monkey patch all the time,
@@ -81,6 +94,33 @@ times with differing loads, and they always roughly come out to the same result.
     Normal regex   0.070000   0.000000   0.070000 (  0.071984)
     Oniguruma      0.040000   0.000000   0.040000 (  0.044686)
     Boost regex    0.030000   0.000000   0.030000 (  0.036421)
+    
+Ruby 1.9 version:
+
+    DNA-Matching (Computer Language Shootout)
+    =========================================
+    Rehearsal --------------------------------------------------
+    1.9 Ruby regex  17.440000   0.030000  17.470000 ( 17.523726)
+    Boost regex      9.750000   0.010000   9.760000 (  9.757300)
+    ---------------------------------------- total: 27.230000sec
+    
+                         user     system      total        real
+    1.9 Ruby regex  17.420000   0.020000  17.440000 ( 17.434514)
+    Boost regex      9.750000   0.010000   9.760000 (  9.755085)
+    
+    Failing to match a phone number in a big string of text
+    =======================================================
+    Rehearsal --------------------------------------------------
+    1.9 Ruby regex   0.020000   0.000000   0.020000 (  0.016165)
+    Boost regex      0.040000   0.000000   0.040000 (  0.035585)
+    ----------------------------------------- total: 0.060000sec
+    
+                         user     system      total        real
+    1.9 Ruby regex   0.010000   0.000000   0.010000 (  0.016185)
+    Boost regex      0.040000   0.000000   0.040000 (  0.035736)
+
+Very interesting - 1.9 seems to have gotten faster at the "match a phone number in a big block of text" benchmark.  Boost is even faster,
+though, and Oniguruma integrated with 1.9 is back at the old 1.9 speed.  I'm hoping to add some kind of XML/HTML-matching benchmark ([Yes, I know this is a bad idea](http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags)). If you know how to benchmark regexps, feel free to [fork away](http://github.com/michaeledgar/ruby-boost-regex/fork)!
 
 ## Usage
 
@@ -99,7 +139,6 @@ Install the gem, use as follows:
     r = /hello|world/i.boost!
     r =~ "i'm Mike. Hello!" #==> 10
     
-
 
 ## Installation
 
