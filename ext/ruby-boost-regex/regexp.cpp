@@ -6,8 +6,11 @@
 
 #ifdef RUBY_19
 #include "ruby/re.h"
+#include "ruby/oniguruma.h"
 #else
 #include "re.h"
+// RE_NREGS got renamed to ONIG_NREGION. Why? Why not!
+#define ONIG_NREGION RE_NREGS 
 #endif
 
 static VALUE rb_mBoost;
@@ -18,37 +21,36 @@ static VALUE rb_kRegexpIgnorecase;
 static VALUE rb_kRegexpExtended;
 
 ///////// imported from re.c
-
-#ifndef RUBY_19
-
-// this is 1.8.x global variable stuff
+#define MATCH_BUSY FL_USER2
+static VALUE match_alloc(VALUE klass);
 
 #define RE_TALLOC(n,t)  ((t*)alloca((n)*sizeof(t)))
 #define TMALLOC(n,t)    ((t*)xmalloc((n)*sizeof(t)))
 #define TREALLOC(s,n,t) (s=((t*)xrealloc(s,(n)*sizeof(t))))
-#define MATCH_BUSY FL_USER2
 
-static VALUE match_alloc(VALUE klass)
-{
-    NEWOBJ(match, struct RMatch);
-    OBJSETUP(match, klass, T_MATCH);
-
-    match->str = 0;
-    match->regs = 0;
-    match->regs = ALLOC(struct re_registers);
-    MEMZERO(match->regs, struct re_registers, 1);
-
-    return (VALUE)match;
+static VALUE get_backref_for_modification() {
+    VALUE match;
+    match = rb_backref_get();
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+        match = match_alloc(rb_cMatch);
+    }
+    else {
+        if (rb_safe_level() >= 3) 
+            OBJ_TAINT(match);
+        else
+            FL_UNSET(match, FL_TAINT);
+    }
+    return match;
 }
 
 static void
-init_regs(struct re_registers *regs, unsigned int num_regs)
+init_regs(struct re_registers *regs,  int num_regs)
 {
   int i;
 
   regs->num_regs = num_regs;
-  if (num_regs < RE_NREGS)
-    num_regs = RE_NREGS;
+  if (num_regs < ONIG_NREGION)
+    num_regs = ONIG_NREGION;
 
   if (regs->allocated == 0) {
     regs->beg = TMALLOC(num_regs, int);
@@ -88,19 +90,22 @@ re_copy_registers(struct re_registers *regs1, struct re_registers *regs2)
   regs1->num_regs = regs2->num_regs;
 }
 
-static VALUE get_backref_for_modification() {
-    VALUE match;
-    match = rb_backref_get();
-    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-        match = match_alloc(rb_cMatch);
-    }
-    else {
-        if (rb_safe_level() >= 3) 
-            OBJ_TAINT(match);
-        else
-            FL_UNSET(match, FL_TAINT);
-    }
-    return match;
+#ifndef RUBY_19
+
+// this is 1.8.x global variable stuff
+
+
+static VALUE match_alloc(VALUE klass)
+{
+    NEWOBJ(match, struct RMatch);
+    OBJSETUP(match, klass, T_MATCH);
+
+    match->str = 0;
+    match->regs = 0;
+    match->regs = ALLOC(struct re_registers);
+    MEMZERO(match->regs, struct re_registers, 1);
+
+    return (VALUE)match;
 }
 
 static void
@@ -126,11 +131,12 @@ fill_regs_from_smatch(std::string::const_iterator first,
 static void save_backref_with_smatch(VALUE str, 
                                      std::string::const_iterator& start, 
                                      std::string::const_iterator& stop, 
-                                     boost::smatch& matches) 
+                                     boost::smatch& matches,
+                                     VALUE regex_obj) 
 {
     static struct re_registers regs;
     VALUE match = get_backref_for_modification();
-    RMATCH(match)->str = rb_str_dup(str);
+    RMATCH(match)->str = rb_str_new4(str);
     fill_regs_from_smatch(start, stop, &regs, matches);
     re_copy_registers(RMATCH(match)->regs, &regs);
     rb_backref_set(match);                                     
@@ -138,17 +144,57 @@ static void save_backref_with_smatch(VALUE str,
 
 #else // Is Ruby 1.9+
 
+static VALUE
+match_alloc(VALUE klass)
+{
+    NEWOBJ(match, struct RMatch);
+    OBJSETUP(match, klass, T_MATCH);
+
+    match->str = 0;
+    match->rmatch = 0;
+    match->regexp = 0;
+    match->rmatch = ALLOC(struct rmatch);
+    MEMZERO(match->rmatch, struct rmatch, 1);
+
+    return (VALUE)match;
+}
+
+
+static void
+fill_regs_from_smatch(std::string::const_iterator first, 
+                      std::string::const_iterator last, 
+                      struct re_registers *regs, 
+                      boost::smatch matches) 
+{
+    init_regs(regs, matches.size());
+    regs->beg[0] = matches[0].first - first;
+    regs->end[0] = matches[0].second - first;
+    
+    for (unsigned int idx = 1; idx <= matches.size(); idx++) {
+        if (!matches[idx].matched) {
+            regs->beg[idx] = regs->end[idx] = -1;
+        } else {
+            regs->beg[idx] = matches[idx].first - first;
+            regs->end[idx] = matches[idx].second - first;
+        }
+    }
+}
+
 static void save_backref_with_smatch(VALUE str, 
                                      std::string::const_iterator& start, 
                                      std::string::const_iterator& stop, 
-                                     boost::smatch& matches) 
+                                     boost::smatch& matches,
+                                     VALUE regex_obj) 
 {
-    static char warned = 0;
-    if (!warned) {
-        rb_warn("Global variables will not be matched with Boost::Regexp under Ruby 1.9.");
-        warned = 1;
-    }
+    static struct re_registers regs;
+    VALUE match = get_backref_for_modification();
     
+    RMATCH(match)->str = rb_str_new4(str);
+    RMATCH(match)->rmatch->char_offset_updated = 0;
+    RMATCH(match)->regexp = regex_obj;
+    fill_regs_from_smatch(start, stop, &regs, matches);
+    re_copy_registers(RMATCH_REGS(match), &regs);
+    rb_backref_set(match);
 }
 
 #endif RUBY_19
@@ -228,11 +274,16 @@ VALUE br_init(int argc, VALUE *argv, VALUE self) {
  * General matcher method that re-raises exception as a Ruby exception.  Gotta use this. sorry.
  */
 static bool 
-br_reg_match_iters(VALUE str, std::string::const_iterator start, std::string::const_iterator stop, boost::smatch& matches, boost::regex reg)
+br_reg_match_iters(VALUE str, 
+                   std::string::const_iterator start, 
+                   std::string::const_iterator stop, 
+                   boost::smatch& matches, 
+                   VALUE reg_obj)
 {
+    boost::regex reg = *get_br_from_value(reg_obj);
     try {
         if (boost::regex_search(start, stop, matches, reg)) {
-            save_backref_with_smatch(str, start, stop, matches);
+            save_backref_with_smatch(str, start, stop, matches, reg_obj);
             return true;
         } else {
             rb_backref_set(Qnil);
@@ -245,7 +296,6 @@ br_reg_match_iters(VALUE str, std::string::const_iterator start, std::string::co
 
 static int 
 br_reg_search(VALUE self, VALUE str) {
-    boost::regex reg = *get_br_from_value(self);
     std::string input = StringValuePtr(str);
     
     std::string::const_iterator start, end;
@@ -253,7 +303,7 @@ br_reg_search(VALUE self, VALUE str) {
     end = input.end();
     
     boost::smatch matches;
-    if (br_reg_match_iters(str, start, end, matches, reg)) {
+    if (br_reg_match_iters(str, start, end, matches, self)) {
         return matches[0].first - start;
     } else {
         return -1;
@@ -262,7 +312,6 @@ br_reg_search(VALUE self, VALUE str) {
 
 static VALUE 
 br_reg_do_match(VALUE self, VALUE str) {
-    boost::regex reg = *get_br_from_value(self);
     std::string input = StringValuePtr(str);
     
     std::string::const_iterator start, end;
@@ -270,7 +319,7 @@ br_reg_do_match(VALUE self, VALUE str) {
     end = input.end();
     
     boost::smatch matches;
-    if (br_reg_match_iters(str, start, end, matches, reg)) {
+    if (br_reg_match_iters(str, start, end, matches, self)) {
         return rb_backref_get();
     } else {
         return Qnil;
