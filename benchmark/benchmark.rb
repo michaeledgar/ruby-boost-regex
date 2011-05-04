@@ -83,7 +83,7 @@ puts ""
 puts "Failing to match a phone number in a big string of text"
 puts "======================================================="
 Benchmark.bmbm do |x|
-    x.report("Normal regex") { 100.times { fair_scan(text, reg)}}
-    x.report("Oniguruma")    { 100.times { fair_scan(text, oni_reg)}}
-    x.report("Boost regex")  { 100.times { fair_scan(text, boost_reg)}}
+    x.report("Normal regex") { 10000.times { fair_scan(text, reg)}}
+    x.report("Oniguruma")    { 10000.times { fair_scan(text, oni_reg)}}
+    x.report("Boost regex")  { 10000.times { fair_scan(text, boost_reg)}}
 end

@@ -85,15 +85,15 @@ times with differing loads, and they always roughly come out to the same result.
     Failing to match a phone number in a big string of text
     =======================================================
     Rehearsal ------------------------------------------------
-    Normal regex   0.070000   0.000000   0.070000 (  0.072128)
-    Oniguruma      0.040000   0.000000   0.040000 (  0.043422)
-    Boost regex    0.040000   0.000000   0.040000 (  0.034708)
-    --------------------------------------- total: 0.150000sec
-    
+    Normal regex   7.090000   0.160000   7.250000 (  8.025125)
+    Oniguruma      4.270000   0.100000   4.370000 (  4.831689)
+    Boost regex    3.450000   0.070000   3.520000 (  3.959367)
+    -------------------------------------- total: 15.140000sec
+
                        user     system      total        real
-    Normal regex   0.070000   0.000000   0.070000 (  0.071984)
-    Oniguruma      0.040000   0.000000   0.040000 (  0.044686)
-    Boost regex    0.030000   0.000000   0.030000 (  0.036421)
+    Normal regex   7.080000   0.130000   7.210000 (  7.979815)
+    Oniguruma      4.230000   0.100000   4.330000 (  4.772939)
+    Boost regex    3.400000   0.080000   3.480000 (  3.846438)
     
 Ruby 1.9 version:
 
@@ -111,16 +111,16 @@ Ruby 1.9 version:
     Failing to match a phone number in a big string of text
     =======================================================
     Rehearsal --------------------------------------------------
-    1.9 Ruby regex   0.020000   0.000000   0.020000 (  0.016165)
-    Boost regex      0.040000   0.000000   0.040000 (  0.035585)
-    ----------------------------------------- total: 0.060000sec
-    
+    1.9 Ruby regex  15.650000   0.310000  15.960000 ( 16.069783)
+    Boost regex     38.230000   0.810000  39.040000 ( 40.099560)
+    ---------------------------------------- total: 55.000000sec
+
                          user     system      total        real
-    1.9 Ruby regex   0.010000   0.000000   0.010000 (  0.016185)
-    Boost regex      0.040000   0.000000   0.040000 (  0.035736)
+    1.9 Ruby regex  15.640000   0.200000  15.840000 ( 16.079149)
+    Boost regex     37.950000   0.720000  38.670000 ( 39.023587)
 
 Very interesting - 1.9 seems to have gotten faster at the "match a phone number in a big block of text" benchmark.  Boost is even faster,
-though, and Oniguruma integrated with 1.9 is back at the old 1.9 speed.  I'm hoping to add some kind of XML/HTML-matching benchmark ([Yes, I know this is a bad idea](http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags)). If you know how to benchmark regexps, feel free to [fork away](http://github.com/michaeledgar/ruby-boost-regex/fork)!
+though, and Oniguruma integrated with 1.9 is back at the old 1.9 speed. For some reason Boost is much slower at failed searches: this is definitely worth investigating.  I'm hoping to add some kind of XML/HTML-matching benchmark ([Yes, I know this is a bad idea](http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags)). If you know how to benchmark regexps, feel free to [fork away](http://github.com/michaeledgar/ruby-boost-regex/fork)!
 
 ## Usage
 

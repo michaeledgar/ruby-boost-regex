@@ -67,6 +67,6 @@ puts ""
 puts "Failing to match a phone number in a big string of text"
 puts "======================================================="
 Benchmark.bmbm do |x|
-    x.report("1.9 Ruby regex") { 100.times { fair_scan(text, reg)}}
-    x.report("Boost regex")  { 100.times { fair_scan(text, boost_reg)}}
+    x.report("1.9 Ruby regex") { 10000.times { fair_scan(text, reg)}}
+    x.report("Boost regex")    { 10000.times { fair_scan(text, boost_reg)}}
 end
